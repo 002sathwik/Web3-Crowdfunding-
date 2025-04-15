@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web3 CrowdFunding Viewer</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2rem; }
+    .campaign { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; }
+    img { max-width: 200px; }
+    .form-container { display: flex; flex-direction: column; margin-top: 1rem; }
+    .form-container input, .form-container button { margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>🌍 Web3 CrowdFunding Campaigns</h1>
+  <button onclick="loadCampaigns()">🔄 Load Campaigns</button>
+  <div id="campaigns"></div>
+
+  <!-- Form to create campaign -->
+  <div class="form-container hidden">
+    <input id="title" type="text" placeholder="Campaign Title" />
+    <input id="description" type="text" placeholder="Campaign Description" />
+    <input id="target" type="number" placeholder="Target Amount (ETH)" />
+    <input id="deadline" type="number" placeholder="Deadline (timestamp)" />
+    <input id="image" type="text" placeholder="Campaign Image URL" />
+    <button onclick="createCampaign()">📅 Create Campaign</button>
+  </div>
+
+  <script>
+    const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Update to your deployed address
+    const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+
+    // Directly define the ABI here
+    const CrowdFundingABI = [
+      {
+        "inputs": [],
+        "name": "getCampaigns",
+        "outputs": [
+          {
+            "components": [
+              { "internalType": "address", "name": "owner", "type": "address" },
+              { "internalType": "string", "name": "title", "type": "string" },
+              { "internalType": "string", "name": "description", "type": "string" },
+              { "internalType": "uint256", "name": "target", "type": "uint256" },
+              { "internalType": "uint256", "name": "amountCollected", "type": "uint256" },
+              { "internalType": "uint256", "name": "deadline", "type": "uint256" },
+              { "internalType": "string", "name": "image", "type": "string" }
+            ],
+            "internalType": "struct CrowdFunding.Campaign[]",
+            "name": "",
+            "type": "tuple[]"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          { "internalType": "address", "name": "_owner", "type": "address" },
+          { "internalType": "string", "name": "_title", "type": "string" },
+          { "internalType": "string", "name": "_description", "type": "string" },
+          { "internalType": "uint256", "name": "_target", "type": "uint256" },
+          { "internalType": "uint256", "name": "_deadline", "type": "uint256" },
+          { "internalType": "string", "name": "_image", "type": "string" }
+        ],
+        "name": "createCampaign",
+        "outputs": [
+          { "internalType": "uint256", "name": "", "type": "uint256" }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ];
+
+    let contract;
+
+    // Initialize contract
+    async function loadContract() {
+      contract = new ethers.Contract(contractAddress, CrowdFundingABI, provider);
+    }
+
+    // Load campaigns and display them
+    async function loadCampaigns() {
+      if (!contract) await loadContract();
+
+      const campaigns = await contract.getCampaigns();
+      const container = document.getElementById('campaigns');
+      container.innerHTML = '';
+
+      campaigns.forEach((c, i) => {
+        const div = document.createElement('div');
+        div.className = 'campaign';
+        div.innerHTML = `
+          <h3>${c.title}</h3>
+          <p><strong>Owner:</strong> ${c.owner}</p>
+          <p>${c.description}</p>
+          <p><strong>Target:</strong> ${ethers.formatEther(c.target)} ETH</p>
+          <p><strong>Collected:</strong> ${ethers.formatEther(c.amountCollected)} ETH</p>
+          <p><strong>Deadline:</strong> ${new Date(Number(c.deadline) * 1000).toLocaleString()}</p>
+          <img src="${c.image}" alt="Campaign Image">
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Create a new campaign
+    async function createCampaign() {
+      const title = document.getElementById('title').value;
+      const description = document.getElementById('description').value;
+      const target = ethers.parseEther(document.getElementById('target').value); // Convert ETH to wei
+      const deadline = Number(document.getElementById('deadline').value);
+      const image = document.getElementById('image').value;
+
+      if (!title || !description || !target || !deadline || !image) {
+        alert('Please fill out all fields.');
+        return;
+      }
+
+      const signer = provider.getSigner();
+      const contractWithSigner = contract.connect(signer);
+
+      try {
+        const tx = await contractWithSigner.createCampaign(
+          signer.getAddress(),
+          title,
+          description,
+          target,
+          deadline,
+          image
+        );
+        await tx.wait();
+        alert('Campaign created successfully!');
+        loadCampaigns(); // Reload the campaigns after creating one
+      } catch (error) {
+        alert('Error creating campaign: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>
