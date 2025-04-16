@@ -47,9 +47,9 @@ async function testCrowdFunding() {
 
   const createTx = await crowdfunding.createCampaign(
     signer.address,
-    "Save the Rainforest",
-    "Help us protect the rainforest by funding our awareness campaign.",
-    ethers.parseEther("1.0"),
+    "Test5",
+    "Test5 description",
+    ethers.parseEther("0.0002"),
     deadline,
     "https://example.com/image.jpg"
   );

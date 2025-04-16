@@ -107,7 +107,7 @@ import { Route, Routes } from 'react-router-dom';
 
 import { Sidebar, Navbar } from './components';
 import { CampaignDetails, CreateCampaign, Home, Profile } from './pages';
-
+import { Toaster } from 'react-hot-toast';
 const App = () => {
   return (
     <div className="relative sm:-8 p-4 bg-[#13131a] min-h-screen flex flex-row">
@@ -125,6 +125,7 @@ const App = () => {
           <Route path="/campaign-details/:id" element={<CampaignDetails />} />
         </Routes>
       </div>
+      <Toaster />
     </div>
   )
 }

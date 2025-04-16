@@ -177,36 +177,57 @@ export const StateContextProvider = ({ children }) => {
     }
   };
 
-  // Donate to a campaign
   const donate = async (pId, amount) => {
     if (!contract || !signer) return;
-
+    
+    // Validate donation amount
+    if (!amount || isNaN(amount) || Number(amount) <= 0) {
+      console.error("Invalid donation amount →", { pId, amount });
+      return;
+    }
+  
     try {
+      // Convert to BigNumber (Wei)
+      const parsedAmount = ethers.utils.parseEther(amount.toString());
+  
       const tx = await contract.donateToCampaign(pId, {
-        value: ethers.utils.parseEther(amount),
+        value: parsedAmount,
       });
-      await tx.wait();
+  
+      await tx.wait(); // Wait for the transaction to be mined
       console.log("Donation successful!", tx);
     } catch (error) {
       console.error("Error donating to campaign:", error);
     }
   };
+  
+  
+  
+  
 
   // Get donations for a specific campaign
   const getDonations = async (pId) => {
     if (!contract) return [];
 
     try {
-      const donations = await contract.getDonators(pId);
-      return donations[0].map((donator, i) => ({
+      const campaigns = await contract.getCampaigns();
+      if (pId >= campaigns.length) {
+        console.error("Invalid pId:", pId);
+        return [];
+      }
+    
+      const donators = await contract.getDonators(pId);
+      return donators.map((donator, i) => ({
         donator,
-        donation: ethers.utils.formatEther(donations[1][i].toString()),
+        donation: donators[1][i],
       }));
     } catch (error) {
       console.error("Error fetching donations:", error);
       return [];
     }
+    
   };
+  
 
   return (
     <StateContext.Provider
